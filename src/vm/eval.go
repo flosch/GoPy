@@ -25,6 +25,7 @@ const (
 	LOAD_CONST = 100
 	LOAD_NAME = 101
 	BUILD_TUPLE = 102
+	BUILD_LIST = 103
 	LOAD_ATTR = 106
 	COMPARE_OP = 107
 	IMPORT_NAME = 108
@@ -43,6 +44,11 @@ const (
 )
 
 const HasArgLimes = 90
+
+const (
+	OpAdd = iota
+	OpMultiply
+)
 
 func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 	starttime := time.Now()
@@ -94,28 +100,21 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				frame.stack.Push(op2stack)
 			case BINARY_MULTIPLY:
 				code.log("Binary add/inplace add", true)
-				op1stack := frame.stack.Pop()
-				if op1stack == nil {
+				op1 := frame.stack.Pop()
+				if op1 == nil {
 					code.runtimeError("Stackitem cannot be nil.")
 				}
-				op1, ok := op1stack.(*PyInt)
 				
-				if !ok {
-					code.runtimeError("Object must be an PyInt")
-				}
-				
-				op2stack := frame.stack.Pop()
-				if op2stack == nil {
+				op2 := frame.stack.Pop()
+				if op2 == nil {
 					code.runtimeError("Stackitem cannot be nil.")
 				}
-				op2, ok := op2stack.(*PyInt)
-				
-				if !ok {
-					code.runtimeError("Object must be an PyInt")
+
+				result := op2.operation(OpMultiply, op1)
+				if _, isException := result.(*PyException); isException {
+					code.runtimeError("Exception raised!") // TODO: handle correctly, this is only provisory
 				}
-				
-				result := NewPyInt(op2.value * op1.value)
-				code.log(fmt.Sprintf("Multiplying: %d * %d = %v", op2.value, op1.value, result.getValue()), true) 
+				code.log(fmt.Sprintf("Multiplying: %s * %s = %s", *op2.asString(), *op1.asString(), *result.asString()), true) 
 				frame.stack.Push(result)
 			case INPLACE_ADD, BINARY_ADD:
 				code.log("Binary add/inplace add", true)
@@ -241,17 +240,29 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				code.log(fmt.Sprintf("Load FAST name: %s (= %v, pushing on stack)", name, *frame.names[name].asString()), true)
 				frame.stack.Push(item)
 			case BUILD_TUPLE:
-				code.log(fmt.Sprintf("Build tuple (%d items)", oparg), true)
 				items := make([]PyObject, oparg)
 				for i := 0; i < int(oparg); i++ {
 					stackitem := frame.stack.Pop()
 					if stackitem == nil {
 						code.runtimeError("Stackitem is nil during tuple build process")
 					}
-					items = append(items, stackitem) 
+					items[i] = stackitem
 				}
 				tuple := NewPyTuple(items)
 				frame.stack.Push(tuple)
+				code.log(fmt.Sprintf("Build tuple (%d items: %s)", oparg, *tuple.(*PyTuple).asString()), true)
+			case BUILD_LIST:
+				items := make([]PyObject, oparg)
+				for i := 0; i < int(oparg); i++ {
+					stackitem := frame.stack.Pop()
+					if stackitem == nil {
+						code.runtimeError("Stackitem is nil during list build process")
+					}
+					items[i] = stackitem 
+				}
+				list := NewPyList(items)
+				frame.stack.Push(list)
+				code.log(fmt.Sprintf("Build list (%d items: %s)", oparg, *list.(*PyList).asString()), true)
 			case LOAD_ATTR:
 				name := code.names.(*PyTuple).getItem(int(oparg)).(*PyString)
 				obj := frame.stack.Pop()
@@ -389,10 +400,12 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				
 				frame.stack.Push(fn)
 			case LOAD_CLOSURE:
+				panic("Check for correct implementation")
 				obj := code.getFromCellFreeStorage(int(oparg))
 				frame.stack.Push(obj)
 				code.log(fmt.Sprintf("Load closure (%s)", *obj.(*PyString).asString()), true)
 			case LOAD_DEREF:
+				panic("Check for correct implementation")
 				code.log(fmt.Sprintf("Load deref (idx = %d)", oparg), true)
 				obj := code.vm.runtime.freevars[int(oparg)]
 				if obj == nil {
@@ -400,6 +413,7 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				}
 				frame.stack.Push(obj)
 			case STORE_DEREF:
+				panic("Check for correct implementation")
 				code.log(fmt.Sprintf("Store deref (idx = %d)", oparg), true)
 				obj := frame.stack.Pop()
 				code.vm.runtime.freevars[int(oparg)] = obj 

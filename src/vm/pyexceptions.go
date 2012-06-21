@@ -2,10 +2,12 @@ package vm
 
 var PyAttributeError = NewPyException("AttributeError")
 var PyNameError = NewPyException("NameError")
+var PyTypeError = NewPyException("TypeError")
 
 type PyException struct {
 	PyObjectData
 	name *string
+	msg *string
 }
 
 func (pe *PyException) asString() *string {
