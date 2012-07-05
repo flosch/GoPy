@@ -24,12 +24,3 @@ func (m *Module) inject(pm *PyModule) error {
 	}
 	return nil
 }
-
-type PyArgs struct {
-	positional []*PyObject
-	keyword map[string]*PyObject
-}
-
-func PyArgs_Build(args ...PyObject) {
-	
-}

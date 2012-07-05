@@ -42,11 +42,11 @@ type PyCode struct {
 func (pc *PyCode) getFromCellFreeStorage(idx int) (obj PyObject) {
 	// TODO: Add some range checks
 	
-	if idx < pc.cellvars.(*PyTuple).length() {
+	if idx < len(pc.cellvars.(*PyTuple).items) {
 		// variable is cellvars[i] if i is less than the length of cellvars
-		obj = pc.cellvars.(*PyTuple).getItem(idx)	
+		obj = pc.cellvars.(*PyTuple).items[idx]	
 	} else {
-		obj = pc.freevars.(*PyTuple).getItem(idx - pc.cellvars.(*PyTuple).length())
+		obj = pc.freevars.(*PyTuple).items[idx - len(pc.cellvars.(*PyTuple).items)]
 	}
 	return
 }

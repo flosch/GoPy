@@ -3,7 +3,7 @@ package vm
 type PyFrame struct {
 	stack *PyObjStack
 	blocks *BlockStack
-	names map[string]PyObject
+	names map[string]PyObject // for fast locals!
 	position int64
 	funcs map[string]PyFunc
 }

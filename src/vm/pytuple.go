@@ -14,31 +14,12 @@ func (pt *PyTuple) getValue() interface{} {
 	return pt.items
 }
 
-func (pt *PyTuple) getItem(idx int) PyObject {
-	return pt.items[idx]
-}
-
-func (pt *PyTuple) length() int {
-	return len(pt.items)
-}
-
 func (pt *PyTuple) isTrue() bool {
 	return len(pt.items) > 0
 }
 
 func (pt *PyTuple) asString() *string {
-	// TODO: Make it more performant
-	str := fmt.Sprintf("(%s)", strings.Join(func() []string {
-		res := make([]string, MinInt(len(pt.items), 11))
-		for idx, item := range pt.items {
-			res[idx] = *item.asString()
-			if idx >= 9 && (idx+1) < (pt.length() - 1) {
-				res[idx+1] = "..."
-				break
-			}
-		}
-		return res
-	}(), ", "))
+	str := fmt.Sprintf("(%s)", *pt.buildItemString())
 	return &str
 }
 
@@ -48,7 +29,7 @@ func (pt *PyTuple) buildItemString() *string {
 		res := make([]string, MinInt(len(pt.items), 11))
 		for idx, item := range pt.items {
 			res[idx] = *item.asString()
-			if idx >= 9 && (idx+1) < (pt.length() - 1) {
+			if idx >= 9 && (idx+1) < (len(pt.items) - 1) {
 				res[idx+1] = fmt.Sprintf("... %d more", len(pt.items) - 10)
 				break
 			}
@@ -58,16 +39,21 @@ func (pt *PyTuple) buildItemString() *string {
 	return &str
 }
 
-func (pt *PyTuple) operation(op int, obj2 PyObject) PyObject {
+// Returns (PyException, resultobj)
+func (pt *PyTuple) operation(op int, obj2 PyObject, inplace bool) (PyObject, PyObject) {
+	if !inplace {
+		panic("Not implemented")
+	}
+	
 	switch op {
 		case OpMultiply:
 			value, isInt := obj2.(*PyInt)
 			if !isInt {
 				fmt.Println("TypeError! Multiply on list/tuple can only be done with integers.")
-				return PyTypeError
+				return PyTypeError, nil
 			}
 			
-			newList := make([]PyObject, 0, pt.length() * int(value.value))
+			newList := make([]PyObject, 0, len(pt.items) * int(value.value))
 			for i := 0; i < int(value.value); i++ {
 				//fmt.Printf("i = %d\n", i)
 				for _, item := range pt.items {
@@ -79,9 +65,9 @@ func (pt *PyTuple) operation(op int, obj2 PyObject) PyObject {
 			
 			//fmt.Printf("New size: %d, requested = %d\n", pt.length(), int(value.value) * oldSize)
 			
-			return pt
+			return nil, pt
 	}
-	return PyTypeError
+	return PyTypeError, nil
 } 
 
 func NewPyTuple(items []PyObject) PyObject {

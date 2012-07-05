@@ -13,7 +13,11 @@ const (
 	ROT_TWO = 2
 	BINARY_MULTIPLY = 20
 	BINARY_ADD = 23
+	BINARY_SUBTRACT = 24
+	BINARY_SUBSCR = 25
 	INPLACE_ADD = 55
+	INPLACE_MULTIPLY = 57
+	STORE_SUBSCR = 60
 	PRINT_ITEM = 71
 	PRINT_NEWLINE = 72
 	RETURN_VALUE = 83
@@ -48,9 +52,12 @@ const HasArgLimes = 90
 const (
 	OpAdd = iota
 	OpMultiply
+	OpSubtract
 )
 
 func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
+	frame.position = 0 // Start from the beginning on eval!
+	
 	starttime := time.Now()
 	defer func() {
 		code.log(fmt.Sprintf("Evaluation took %s.", time.Since(starttime)), true) 
@@ -98,8 +105,8 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				}
 				frame.stack.Push(op1stack)
 				frame.stack.Push(op2stack)
-			case BINARY_MULTIPLY:
-				code.log("Binary add/inplace add", true)
+			case BINARY_MULTIPLY, INPLACE_MULTIPLY, INPLACE_ADD, BINARY_ADD, BINARY_SUBTRACT:
+				code.log(fmt.Sprintf("Beginning math operation (%d)", opcode), true)
 				op1 := frame.stack.Pop()
 				if op1 == nil {
 					code.runtimeError("Stackitem cannot be nil.")
@@ -109,38 +116,56 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				if op2 == nil {
 					code.runtimeError("Stackitem cannot be nil.")
 				}
+				
+				// save old content for log
+				op2_old := *op2.asString()
+				
+				var err PyObject
+				var result PyObject
+				
+				switch opcode {
+					case INPLACE_MULTIPLY:
+						err, result = op2.operation(OpMultiply, op1, true)
+					case BINARY_MULTIPLY:
+						err, result = op2.operation(OpMultiply, op1, false)
+					case INPLACE_ADD:
+						err, result = op2.operation(OpAdd, op1, true)
+					case BINARY_ADD:
+						err, result = op2.operation(OpAdd, op1, false)
+					case BINARY_SUBTRACT:
+						err, result = op2.operation(OpSubtract, op1, false)
+					default:
+						panic("Not implemented")
+				}
+				
+				if err != nil {
+					code.runtimeError("Exception raised: " + *err.(*PyException).name) // TODO: handle correctly, this is only provisory
+				}
 
-				result := op2.operation(OpMultiply, op1)
-				if _, isException := result.(*PyException); isException {
-					code.runtimeError("Exception raised!") // TODO: handle correctly, this is only provisory
+				if result == nil {
+					code.runtimeError("Result is nil in math operation")
 				}
-				code.log(fmt.Sprintf("Multiplying: %s * %s = %s", *op2.asString(), *op1.asString(), *result.asString()), true) 
+
+				code.log(fmt.Sprintf("Operation finished: %v [%v] %v = %v", op2_old, opcode, *op1.asString(), *result.asString()), true)
 				frame.stack.Push(result)
-			case INPLACE_ADD, BINARY_ADD:
-				code.log("Binary add/inplace add", true)
-				op1stack := frame.stack.Pop()
-				if op1stack == nil {
-					code.runtimeError("Stackitem cannot be nil.")
-				}
-				op1, ok := op1stack.(*PyInt)
-				
-				if !ok {
-					code.runtimeError("Object must be an PyInt")
+			case BINARY_SUBSCR:
+				key := frame.stack.Pop()
+				obj := frame.stack.Pop()
+				if key == nil || obj == nil {
+					code.runtimeError("Key or object is nil")
 				}
 				
-				op2stack := frame.stack.Pop()
-				if op2stack == nil {
-					code.runtimeError("Stackitem cannot be nil.")
-				}
-				op2, ok := op2stack.(*PyInt)
-				
-				if !ok {
-					code.runtimeError("Object must be an PyInt")
-				}
-				
-				result := NewPyInt(op2.value + op1.value)
-				code.log(fmt.Sprintf("Adding: %d + %d = %v", op2.value, op1.value, result.getValue()), true) 
+				result := obj.getItem(key)
 				frame.stack.Push(result)
+			case STORE_SUBSCR:
+				key := frame.stack.Pop()
+				obj := frame.stack.Pop()
+				value := frame.stack.Pop()
+				fmt.Printf("%T\n", obj)
+				err := obj.setItem(key, value)
+				if err != nil {
+					code.runtimeError("Exception raised: " + *err.(*PyException).name)
+				}
 			case PRINT_ITEM:
 				code.log("Print item", true)
 				stackitem := frame.stack.Pop()
@@ -166,17 +191,17 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				}
 			case RETURN_VALUE:
 				// TODO: Abschlussarbeiten durchführen, was zB? Siehe ceval.c in CPython
-				code.log("Return value", true)
 				stackitem := frame.stack.Pop()
 				if stackitem == nil {
 					code.runtimeError("Stackitem cannot be nil.")
 				}
+				code.log(fmt.Sprintf("Return value: %v", *stackitem.asString()), true)
 				return stackitem, nil
 			case POP_BLOCK:
 				code.log("Pop block", true)
 				frame.blocks.Pop()
 			case LOAD_NAME:
-				name := *code.names.(*PyTuple).getItem(int(oparg)).getValue().(*string)
+				name := *code.names.(*PyTuple).items[int(oparg)].getValue().(*string)
 				
 				// Check wheter it's a built in type
 				value, is_builtin := PyBuiltInTypeMap[name]
@@ -204,7 +229,7 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 					frame.stack.Push(value)
 				}
 			case STORE_NAME:
-				name := *code.names.(*PyTuple).getItem(int(oparg)).getValue().(*string)
+				name := *code.names.(*PyTuple).items[int(oparg)].getValue().(*string)
 				
 				_, global_found := code.vm.runtime.mainframe.names[name]
 				
@@ -228,11 +253,11 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				if stackitem == nil {
 					code.runtimeError("Stackitem cannot be nil.")
 				}
-				name := *code.varnames.(*PyTuple).getItem(int(oparg)).(*PyString).asString()
+				name := *code.varnames.(*PyTuple).items[int(oparg)].(*PyString).asString()
 				frame.names[name] = stackitem
 				code.log(fmt.Sprintf("Store FAST name: %s = %v", name, *frame.names[name].asString()), true)
 			case LOAD_FAST:
-				name := *code.varnames.(*PyTuple).getItem(int(oparg)).(*PyString).asString()
+				name := *code.varnames.(*PyTuple).items[int(oparg)].(*PyString).asString()
 				item, ok := frame.names[name]
 				if !ok {
 					code.runtimeError("Could not find item in varnames")
@@ -248,6 +273,7 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 					}
 					items[i] = stackitem
 				}
+				fmt.Println("Creating TUPLE!")
 				tuple := NewPyTuple(items)
 				frame.stack.Push(tuple)
 				code.log(fmt.Sprintf("Build tuple (%d items: %s)", oparg, *tuple.(*PyTuple).asString()), true)
@@ -260,11 +286,12 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 					}
 					items[i] = stackitem 
 				}
+				fmt.Println("Creating LIST!")
 				list := NewPyList(items)
 				frame.stack.Push(list)
 				code.log(fmt.Sprintf("Build list (%d items: %s)", oparg, *list.(*PyList).asString()), true)
 			case LOAD_ATTR:
-				name := code.names.(*PyTuple).getItem(int(oparg)).(*PyString)
+				name := code.names.(*PyTuple).items[int(oparg)].(*PyString)
 				obj := frame.stack.Pop()
 				result := obj.getattr(name, PyNil) // TODO: Check+raise Exception in result! This might return PyAttributeError
 				
@@ -291,11 +318,11 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				code.log(fmt.Sprintf("Compare op (%d); result = %t", oparg, result.isTrue()), true)
 				frame.stack.Push(result)
 			case LOAD_CONST:
-				value := code.consts.(*PyTuple).getItem(int(oparg))
+				value := code.consts.(*PyTuple).items[int(oparg)]
 				code.log(fmt.Sprintf("Load const: %v (pushing on stack)", *value.asString()), true)
 				frame.stack.Push(value)
 			case LOAD_GLOBAL:
-				name := *code.names.(*PyTuple).getItem(int(oparg)).getValue().(*string)
+				name := *code.names.(*PyTuple).items[int(oparg)].getValue().(*string)
 				
 				// Check wheter it's a built in type
 				value, is_builtin := PyBuiltInTypeMap[name]
@@ -318,7 +345,7 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 				code.log("Setup loop", true)
 				frame.blocks.Push(op_position, frame.position + int64(oparg))
 			case IMPORT_NAME:
-				name := code.names.(*PyTuple).getItem(int(oparg)).(*PyString).asString()
+				name := code.names.(*PyTuple).items[int(oparg)].(*PyString).asString()
 				module := NewPyModule(name)
 				frame.stack.Push(module)
 				code.log(fmt.Sprintf("Import name (%s = %v, pushed on stack)", *name, *module.asString()), true)
@@ -335,29 +362,36 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 					frame.position = int64(oparg)
 				} 
 				
-				code.log(fmt.Sprintf("Pop jump if false (result = %t)", stackitem.isTrue()), true)
+				code.log(fmt.Sprintf("Pop/jump if false (result = %t)", stackitem.isTrue()), true)
 			case CALL_FUNCTION:
 				code.log(fmt.Sprintf("Call function (args=%d)", oparg), true)
+
+				args := NewPyArgs()
+
 				if oparg > 0 {
 					nkwargs := (oparg >> 8) & 0xff
 					// Keyword arguments first (high byte)
 					for i := 0; i < int(nkwargs); i++ {
 						arg := frame.stack.Pop()
 						code.log(fmt.Sprintf("   Received kw-arg: %v", arg), true)
+						panic("Set kw! - TODO")
 					}			
-							
+					
 					nposargs := oparg & 0xff 
 					// positional parameters (low byte)
 					for i := 0; i < int(nposargs); i++ {
 						arg := frame.stack.Pop()
 						code.log(fmt.Sprintf("   Received pos-arg: %v", arg), true)
+						args.addPositional(arg)
 					}
 				}
+				
 				fobj := frame.stack.Pop()
 				if fobj == nil {
 					code.runtimeError("Stack empty, expected: function object")
 				}
-				result := fobj.(*PyFunc).run(nil) // TODO FIX!!
+				code.log(fmt.Sprintf("Code obj argcount: %d", fobj.(*PyFunc).codeobj.(*PyCode).argcount), true)
+				result := fobj.(*PyFunc).run(args) // TODO FIX!!
 				frame.stack.Push(result) // dunno?
 			case MAKE_FUNCTION:
 				code.log(fmt.Sprintf("Make function (argcount=%d)", oparg), true)

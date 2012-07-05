@@ -21,7 +21,6 @@ type PyFunc struct {
 	
 	// External func
 	codeobj PyObject
-	frame *PyFrame
 	
 	// Meta
 	functype int
@@ -71,6 +70,9 @@ func (pf *PyFunc) log(msg string) {
 }
 
 func (pf *PyFunc) run(args *PyArgs) PyObject {
+	// Create frame for run
+	frame := NewPyFrame(1000) // TODO change stack size to a better value?
+
 	starttime := time.Now()
 	defer func() {
 		if debugMode {
@@ -83,12 +85,22 @@ func (pf *PyFunc) run(args *PyArgs) PyObject {
 			return pf.mfunc(args)
 		case PyFuncExternal:
 			if args != nil {
-				panic("What to do with this?!")
+				for i, value := range args.positional {
+					// Iterate reverse! Therefore: 
+					idx := len(args.positional) - 1 - i
+					
+					name := pf.codeobj.(*PyCode).varnames.(*PyTuple).items[idx]
+					frame.names[*name.asString()] = value
+					fmt.Printf("\n  --- Setting %v -> %v...\n", *name.asString(), *value.asString())
+				}
+				if len(args.keyword) > 0 {
+					panic("Not implemented")
+				}
 			}
 			if debugMode {
 				pf.log("Called")
 			}
-			res, err := pf.codeobj.(*PyCode).eval(pf.frame)
+			res, err := pf.codeobj.(*PyCode).eval(frame)
 			if err != nil {
 				pf.codeobj.(*PyCode).runtimeError(err.Error())
 			}
@@ -111,7 +123,6 @@ func NewPyFuncInternal(module *Module, fn ModuleFunc, name *string) PyObject {
 func NewPyFuncExternal(codeobj PyObject) PyObject {
 	pf := &PyFunc{
 		codeobj: codeobj,
-		frame: NewPyFrame(1000), // TODO change stack size to a better value?
 		functype: PyFuncExternal,
 	}
 	pf.pyObjInit()

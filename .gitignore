@@ -2,3 +2,5 @@
 #*.pyc
 *.py~
 .project
+/bin/main
+/.settings/org.eclipse.ltk.core.refactoring.prefs

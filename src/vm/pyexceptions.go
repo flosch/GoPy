@@ -3,6 +3,7 @@ package vm
 var PyAttributeError = NewPyException("AttributeError")
 var PyNameError = NewPyException("NameError")
 var PyTypeError = NewPyException("TypeError")
+var PyIndexError = NewPyException("IndexError")
 
 type PyException struct {
 	PyObjectData
