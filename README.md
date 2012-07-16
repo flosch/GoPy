@@ -8,11 +8,9 @@ The following python code...
 
 ... would be executed as ...
 
-$ go run main.go -filename mytest.pyc 
-GoPy 0.1 - (C) 2012 Florian Schlachter, Berlin
-
-2012/07/16 20:44:34 [Settings filename=mytest.pyc]
-	
+	$ go run main.go -filename mytest.pyc 
+	GoPy 0.1 - (C) 2012 Florian Schlachter, Berlin
+	2012/07/16 20:44:34 [Settings filename=mytest.pyc]
 	2012/07/16 20:44:34 Parsing...
 	2012/07/16 20:44:34 File created: 2012-07-16 20:44:12 +0200 CEST (timestamp: 1342464252)
 	2012/07/16 20:44:34 Parsing finished
