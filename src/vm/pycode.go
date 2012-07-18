@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"log"
 	"fmt"
+	"log"
 )
 
 type CodeFlags struct {
@@ -22,31 +22,31 @@ type PyCode struct {
 	stacksize,
 	raw_flags,
 	firstlineno uint32
-	
+
 	consts,
 	names,
 	varnames,
 	freevars,
 	cellvars,
 	lnotab PyObject
-	
+
 	filename,
 	name *string
-	
+
 	flags CodeFlags
-	
-	vm *VM
+
+	vm   *VM
 	code *codeReader
 }
 
 func (pc *PyCode) getFromCellFreeStorage(idx int) (obj PyObject) {
 	// TODO: Add some range checks
-	
+
 	if idx < len(pc.cellvars.(*PyTuple).items) {
 		// variable is cellvars[i] if i is less than the length of cellvars
-		obj = pc.cellvars.(*PyTuple).items[idx]	
+		obj = pc.cellvars.(*PyTuple).items[idx]
 	} else {
-		obj = pc.freevars.(*PyTuple).items[idx - len(pc.cellvars.(*PyTuple).items)]
+		obj = pc.freevars.(*PyTuple).items[idx-len(pc.cellvars.(*PyTuple).items)]
 	}
 	return
 }
@@ -76,7 +76,7 @@ func (pc *PyCode) asString() *string {
 	return pc.name
 }
 
-func (pc* PyCode) getValue() interface{} {
+func (pc *PyCode) getValue() interface{} {
 	return pc.code
 }
 

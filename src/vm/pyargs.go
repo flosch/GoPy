@@ -2,7 +2,7 @@ package vm
 
 type PyArgs struct {
 	positional []PyObject
-	keyword map[string]PyObject
+	keyword    map[string]PyObject
 }
 
 func PyArgs_Build(args ...PyObject) {
@@ -16,6 +16,6 @@ func (pa *PyArgs) addPositional(obj PyObject) {
 func NewPyArgs() *PyArgs {
 	return &PyArgs{
 		positional: make([]PyObject, 0, 100),
-		keyword: make(map[string]PyObject),
+		keyword:    make(map[string]PyObject),
 	}
 }

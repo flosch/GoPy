@@ -5,11 +5,9 @@ var PyFalse = NewPyBool(false)
 var PyNil = NewPyNone()
 
 var PyBuiltInTypeMap = map[string]PyObject{
-	"True": PyTrue,
+	"True":  PyTrue,
 	"False": PyFalse,
 	//"None": PyNil,
 }
 
-var PyBuiltInFuncMap = map[string]func(){
-
-} 
+var PyBuiltInFuncMap = map[string]func(){}

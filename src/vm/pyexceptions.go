@@ -8,7 +8,7 @@ var PyIndexError = NewPyException("IndexError")
 type PyException struct {
 	PyObjectData
 	name *string
-	msg *string
+	msg  *string
 }
 
 func (pe *PyException) asString() *string {

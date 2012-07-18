@@ -1,7 +1,7 @@
 package vm
 
 import (
-	//"log"
+//"log"
 )
 
 var Modules = map[string]Module{
@@ -13,7 +13,7 @@ type ModuleFunc func(args *PyArgs) PyObject
 type ModuleDict map[string]ModuleFunc
 
 type Module struct {
-	name string
+	name  string
 	funcs ModuleDict
 }
 

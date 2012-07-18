@@ -17,20 +17,20 @@ func (pl *PyList) asString() *string {
 func (pl *PyList) setItem(key, value PyObject) PyObject {
 	if _, ok := pl.attributes["__setitem__"]; ok { // set_func
 		// found setattr, call it!
-		panic("not implemented yet")	
+		panic("not implemented yet")
 	}
 	idxobj, isInt := key.(*PyInt)
 	if !isInt {
 		fmt.Sprintf("joo\n")
 		return PyTypeError
 	}
-	
+
 	if int(idxobj.value) > len(pl.items) {
 		return PyIndexError
 	}
-	
+
 	pl.items[idxobj.value] = value
-	
+
 	return nil
 }
 
@@ -38,18 +38,18 @@ func (pl *PyList) setItem(key, value PyObject) PyObject {
 func (pl *PyList) getItem(key PyObject) PyObject {
 	if _, ok := pl.attributes["__getitem__"]; ok { // set_func
 		// found setattr, call it!
-		panic("not implemented yet")	
+		panic("not implemented yet")
 	}
 	idxobj, isInt := key.(*PyInt)
 	if !isInt {
 		fmt.Sprintf("joo\n")
 		return PyTypeError
 	}
-	
+
 	if int(idxobj.value) > len(pl.items) {
 		return PyIndexError
 	}
-	
+
 	return pl.items[idxobj.value]
 }
 

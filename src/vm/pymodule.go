@@ -7,11 +7,11 @@ import (
 type PyModule struct {
 	PyObjectData
 	module *Module
-	name *string
-	
+	name   *string
+
 	// If module is extern (it's own pyc file):
-	content *codeReader	
-	code PyObject
+	content          *codeReader
+	code             PyObject
 	interned_strings []PyObject
 }
 
@@ -32,12 +32,12 @@ func NewPyModule(name *string) PyObject {
 	mod := new(PyModule)
 	mod.pyObjInit()
 	mod.name = name
-	
+
 	// Import all functions and global names and make them
 	// available in the attributes
 	module, is_builtin := Modules[*name]
 	if is_builtin {
-		mod.module = &module 
+		mod.module = &module
 		if err := module.inject(mod); err != nil {
 			panic("Error during module injection: " + err.Error())
 		}
@@ -45,6 +45,6 @@ func NewPyModule(name *string) PyObject {
 		// Search for a pyc file and execute it!
 		panic(fmt.Sprintf("Non-builtin modules are not supported yet (%v)", *name))
 	}
-	
+
 	return mod
 }

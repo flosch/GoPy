@@ -8,7 +8,7 @@ type PyObject interface {
 	getValue() interface{}
 	isTrue() bool
 	asString() *string
-	
+
 	getattr(name, standard PyObject) PyObject
 	operation(op int, obj2 PyObject, inplace bool) (PyObject, PyObject)
 	setItem(key, value PyObject) PyObject
@@ -47,17 +47,17 @@ func (obj *PyObjectData) getattr(name, standard PyObject) PyObject {
 func (obj *PyObjectData) setItem(key, value PyObject) PyObject {
 	if _, ok := obj.attributes["__setitem__"]; ok { // set_func
 		// found setattr, call it!
-		panic("not implemented yet")	
+		panic("not implemented yet")
 	}
 	panic("stop")
 	return PyTypeError
-} 
+}
 
 // Returns actual object or exception object
 func (obj *PyObjectData) getItem(key PyObject) PyObject {
 	if _, ok := obj.attributes["__getitem__"]; ok { // set_func
 		// found setattr, call it!
-		panic("not implemented yet")	
+		panic("not implemented yet")
 	}
 	return PyTypeError
 }

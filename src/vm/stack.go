@@ -22,7 +22,7 @@ func (s *PyObjStack) Push(item PyObject) {
 		if debugMode {
 			log.Println("!!! More PyObjStack space required, acquiring...")
 		}
-		items := make([]PyObject, len(s.items) * 2)
+		items := make([]PyObject, len(s.items)*2)
 		copy(items, s.items)
 		s.items = items
 	}
@@ -34,7 +34,7 @@ func (s *PyObjStack) Pop() PyObject {
 	if s.count == 0 {
 		return nil
 	}
-	item := s.items[s.count - 1]
+	item := s.items[s.count-1]
 	s.count--
 	return item
 }
@@ -61,12 +61,12 @@ func (s *BlockStack) Push(position, position2 int64) {
 		if debugMode {
 			log.Println("!!! More BlockStack space required, acquiring...")
 		}
-		items := make([]*Block, len(s.items) * 2)
+		items := make([]*Block, len(s.items)*2)
 		copy(items, s.items)
 		s.items = items
 	}
 	s.items[s.count] = &Block{
-		position: position,
+		position:  position,
 		position2: position2,
 	}
 	s.count++
@@ -76,7 +76,7 @@ func (s *BlockStack) Pop() *Block {
 	if s.count == 0 {
 		return nil
 	}
-	item := s.items[s.count - 1]
+	item := s.items[s.count-1]
 	s.count--
 	return item
 }
