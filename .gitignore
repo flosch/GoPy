@@ -4,3 +4,9 @@
 .project
 /bin/main
 /.settings/org.eclipse.ltk.core.refactoring.prefs
+/src/main/mem.prof
+/src/main/perf.az
+/src/main/cpu.prof
+/pkg/linux_amd64/main.a
+/pkg/linux_amd64/vm.a
+/src/main/main_test.go
