@@ -95,7 +95,7 @@ func (pf *PyFunc) run(args *PyArgs) PyObject {
 
 				name := pf.codeobj.(*PyCode).varnames.(*PyTuple).items[idx]
 				frame.names[*name.asString()] = value
-				fmt.Printf("\n  --- Setting %v -> %v...\n", *name.asString(), *value.asString())
+				//fmt.Printf("\n  --- Setting %v -> %v...\n", *name.asString(), *value.asString())
 			}
 			if len(args.keyword) > 0 {
 				panic("Not implemented")
