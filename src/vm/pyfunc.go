@@ -42,7 +42,7 @@ func (pf *PyFunc) isTrue() bool {
 }
 
 func (pf *PyFunc) isExternal() bool {
-	return pf.functype == PyFuncExternal 
+	return pf.functype == PyFuncExternal
 }
 
 func (pf *PyFunc) asString() *string {
