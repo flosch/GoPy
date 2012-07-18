@@ -41,6 +41,10 @@ func (pf *PyFunc) isTrue() bool {
 	return true
 }
 
+func (pf *PyFunc) isExternal() bool {
+	return pf.functype == PyFuncExternal 
+}
+
 func (pf *PyFunc) asString() *string {
 	var str string
 	switch pf.functype {

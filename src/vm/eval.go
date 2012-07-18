@@ -390,7 +390,9 @@ func (code *PyCode) eval(frame *PyFrame) (PyObject, error) {
 			if fobj == nil {
 				code.runtimeError("Stack empty, expected: function object")
 			}
-			code.log(fmt.Sprintf("Code obj argcount: %d", fobj.(*PyFunc).codeobj.(*PyCode).argcount), true)
+			if fobj.(*PyFunc).isExternal() {
+				code.log(fmt.Sprintf("Code obj argcount: %d", fobj.(*PyFunc).codeobj.(*PyCode).argcount), true)
+			}
 			result := fobj.(*PyFunc).run(args) // TODO FIX!!
 			frame.stack.Push(result)           // dunno?
 		case MAKE_FUNCTION:
