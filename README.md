@@ -2,9 +2,11 @@ GoPy is an experimental Python interpreter implementation in Go. It parses produ
 
 The following python code...
 
+	import time
 	a = 5
 	b = 10
 	print a, "*", b, "=", a*b
+	print "Unix time?", time.time()
 
 ... would be executed as ...
 
@@ -18,6 +20,7 @@ The following python code...
 	2012/07/16 20:44:34 Running...
 	2012/07/16 20:44:34 [VM] Stacksize = 2
 	5 * 10 = 50 
+	Unix time? 1342634208 
 	2012/07/16 20:44:34 [VM] Returning value: None (*vm.PyNone)
 	2012/07/16 20:44:34 [VM] Execution of program took 135us.
 	2012/07/16 20:44:34 Running finished (19 instructions ran).
