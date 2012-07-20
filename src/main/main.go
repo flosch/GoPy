@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"vm"
+	"github.com/flosch/GoPy/src/vm"
 
 	"os"
 	"runtime/pprof"
